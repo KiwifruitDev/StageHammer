@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net472</TargetFramework>
+    <PlatformTarget>x86</PlatformTarget>
+    <Prefer32Bit>true</Prefer32Bit>
+    <UseWindowsForms>true</UseWindowsForms>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BrawlLib\BrawlLib.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Sledge.Formats.Map" Version="1.1.4" />
+  </ItemGroup>
+  <!-- Copy ColladaExport.py to build directory -->
+  <Target Name="CopyColladaExport" AfterTargets="AfterBuild">
+    <Copy SourceFiles="ColladaExport.py" DestinationFolder="$(OutputPath)" />
+  </Target>
+</Project>
