@@ -11,6 +11,8 @@ using BrawlLib.Wii.Compression;
 using BrawlLib.Wii.Textures;
 using Sledge.Formats.Map.Formats;
 using Sledge.Formats.Map.Objects;
+using Pfim;
+using System.Runtime.InteropServices;
 
 namespace StageHammer
 {
@@ -35,7 +37,7 @@ namespace StageHammer
                 string localPacPath = System.IO.Path.Combine(Environment.CurrentDirectory, "template.pac");
                 if (!File.Exists(localPacPath))
                 {
-                    Console.WriteLine("No .pac file found in {0} or {1}.", System.IO.Path.GetDirectoryName(args[2]), Environment.CurrentDirectory);
+                    Console.WriteLine("No template.pac file found in {0} or {1}.", System.IO.Path.GetDirectoryName(args[2]), Environment.CurrentDirectory);
                     return;
                 }
                 File.Copy(localPacPath, pacPath);
@@ -111,13 +113,32 @@ namespace StageHammer
                 return;
             }
 
-            Console.WriteLine("Opening Blender...");
+            // Delete all valid images in the output directory
+            DirectoryInfo outputDir = new DirectoryInfo(System.IO.Path.GetDirectoryName(args[2]));
+            FileInfo[] outputFiles;
+            outputFiles = outputDir.GetFiles();
+            foreach (FileInfo info in outputFiles)
+            {
+                string ext = System.IO.Path.GetExtension(info.FullName).ToUpper();
+                if (ext == ".TGA")
+                {
+                    info.Delete();
+                }
+            }
 
             string vmfPath = args[2];
             string colladaPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(args[2]), basename + ".dae");
 
+            // Delete the collada file if it exists
+            if (File.Exists(colladaPath))
+            {
+                File.Delete(colladaPath);
+            }
+
             // Script path is CWD
             string colladaScriptPath = System.IO.Path.Combine(Environment.CurrentDirectory, "ColladaExport.py");
+
+            Console.WriteLine("Opening Blender...");
 
             // Execute blender --background --python path/to/executable/ColladaExport.py -- <vmfPath> <colladaPath>
             System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo
@@ -151,7 +172,7 @@ namespace StageHammer
 
             // Delete the collada model
             colladaModel.Dispose();
-            File.Delete(colladaPath);
+            //File.Delete(colladaPath);
 
             Console.WriteLine("Model replaced.");
 
@@ -194,12 +215,23 @@ namespace StageHammer
             foreach (FileInfo info in files)
             {
                 string ext = System.IO.Path.GetExtension(info.FullName).ToUpper();
-                if (ext == ".PNG" || ext == ".TGA" || ext == ".BMP" || ext == ".JPG" || ext == ".JPEG" ||
-                    ext == ".GIF" || ext == ".TIF" || ext == ".TIFF")
+                if (ext == ".TGA")
                 {
+                    Console.WriteLine("Texture: {0}", info.FullName);
+                    // Get width and height using bytes (TGA)
+                    byte[] bytes = File.ReadAllBytes(info.FullName);
+                    int width = BitConverter.ToInt16(bytes, 12);
+                    int height = BitConverter.ToInt16(bytes, 14);
+                    Console.WriteLine("Width: {0}, Height: {1}", width, height);
+                    // Use Pfim
+                    IImage pfImage = Pfimage.FromFile(info.FullName);
+                    // Create bitmap
+                    GCHandle pinnedArray = GCHandle.Alloc(pfImage.Data, GCHandleType.Pinned);
+                    IntPtr pointer = pinnedArray.AddrOfPinnedObject();
+                    Bitmap bitmap = new Bitmap(width, height, pfImage.Stride, System.Drawing.Imaging.PixelFormat.Format32bppArgb, pointer);
+                    pinnedArray.Free();
                     // Convert the texture
                     TextureConverter format = TextureConverter.Get(WiiPixelFormat.RGB565);
-                    Bitmap bitmap = new Bitmap(info.FullName);
                     FileMap textureFile = format.EncodeTEX0Texture(bitmap, 1);
                     bitmap.Dispose();
                     TEX0Node texture = textureData.CreateResource<TEX0Node>(System.IO.Path.GetFileNameWithoutExtension(info.FullName));

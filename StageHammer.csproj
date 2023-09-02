@@ -6,12 +6,15 @@
     <PlatformTarget>x86</PlatformTarget>
     <Prefer32Bit>true</Prefer32Bit>
     <UseWindowsForms>true</UseWindowsForms>
+    <Version>1.0.1</Version>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\BrawlLib\BrawlLib.csproj" />
+    <ProjectReference Include="..\BrawlCrate\BrawlLib\BrawlLib.csproj" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="Pfim" Version="0.11.2" />
     <PackageReference Include="Sledge.Formats.Map" Version="1.1.4" />
+    <PackageReference Include="System.Runtime.InteropServices" Version="4.3.0" />
   </ItemGroup>
   <!-- Copy ColladaExport.py to build directory -->
   <Target Name="CopyColladaExport" AfterTargets="AfterBuild">
